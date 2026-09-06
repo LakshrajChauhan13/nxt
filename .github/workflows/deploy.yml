@@ -22,16 +22,17 @@ jobs:
         script: |
           # 1. Force the headless shell to load your environment path variables
           export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # Loads nvm if present
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
           source $HOME/.bashrc
           export PATH=$PATH:/usr/bin:/usr/local/bin:$HOME/.npm-global/bin
 
           # 2. Navigate to the application root directory
           cd /var/www/my-next-app
 
-          # 3. Securely clone or pull down your target repository code
+          # 3. Synchronize your public repository code to the workspace
           if [ -d ".git" ]; then
             git reset --hard HEAD
+            git remote set-url origin https://github.com{{ github.repository }}.git
             git pull origin main
           else
             git clone https://github.com{{ github.repository }}.git .
