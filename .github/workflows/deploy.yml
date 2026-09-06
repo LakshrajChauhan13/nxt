@@ -2,7 +2,7 @@ name: Node.js CI/CD to AWS EC2
 
 on:
   push:
-    branches: [ main ] # Triggers the script whenever you push code to the main branch
+    branches: [ main ]
 
 jobs:
   deploy:
@@ -20,13 +20,16 @@ jobs:
         key: ${{ secrets.EC2_DEPLOY_PRIVATE_KEY }}
         port: 22
         script: |
-          # 1. Navigate to the application root directory
+          # 1. Force the headless shell to load your environment path variables
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # Loads nvm if present
+          source $HOME/.bashrc
+          export PATH=$PATH:/usr/bin:/usr/local/bin:$HOME/.npm-global/bin
+
+          # 2. Navigate to the application root directory
           cd /var/www/my-next-app
 
-          # 2. Pull the latest code down from your repository
-          # Note: For an initial simple test setup, we can clean and sync files directly
-          # Alternative for absolute simplicity: Clone/pull using git or rsync. 
-          # To keep this clean, let's clone the repo if empty, or pull if it exists:
+          # 3. Securely clone or pull down your target repository code
           if [ -d ".git" ]; then
             git reset --hard HEAD
             git pull origin main
@@ -34,14 +37,14 @@ jobs:
             git clone https://github.com{{ github.repository }}.git .
           fi
 
-          # 3. Install production dependencies and build the Next.js app
+          # 4. Install production dependencies and compile Next.js app
           npm install
           npm run build
 
-          # 4. Start or Reload the application using PM2 to prevent downtime
-          pm2 describe next-app > /dev/null-app
+          # 5. Manage background service tasks with PM2 safely
+          pm2 describe next-app > /dev/null 2>&1
           if [ $? -eq 0 ]; then
             pm2 reload next-app
           else
-            pm2 start npm --name "next-app" -- stories start
+            pm2 start npm --name "next-app" -- start
           fi
